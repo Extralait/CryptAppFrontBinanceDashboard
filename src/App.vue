@@ -42,8 +42,8 @@
       <Chart
           class="main-chart"
           v-if="!loading"
-          :width="1600"
-          :height="1000"
+          :width="clientWidth-100"
+          :height="clientHeight-90"
           :chart="this.getChartData"
           :key="update_counter"
       />
@@ -64,6 +64,8 @@ export default {
   data() {
     return {
       loading: true,
+      clientHeight:0,
+      clientWidth:0,
       kline_type: "1m",
       coin_pair_name: "BTCUSDT",
       limit: 200,
@@ -191,14 +193,27 @@ export default {
       )
 
       this.update_counter += 1
-    }
+    },
+    startWaiting: function () {
+        this.is_waiting_started=true
+        setInterval(() => {
+          this.buildChart()
+        }, 1000 * 60)
+    },
+    onResize: function () {
+      this.clientHeight = document.documentElement.clientHeight
+      this.clientWidth = document.documentElement.clientWidth
+    },
   },
   computed: {
     ...mapGetters(['getChartData']),
   },
   async mounted() {
+    window.addEventListener('resize', this.onResize)
     await this.buildChart()
     this.loading = false
+    this.startWaiting()
+    this.onResize()
   },
   watch:{
     // eslint-disable-next-line no-unused-vars
@@ -213,7 +228,11 @@ export default {
     kline_type(new_val,old_val) {
       this.buildChart()
     },
-  }
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onResize)
+  },
+
 }
 </script>
 
@@ -235,9 +254,9 @@ export default {
 
 .control-container{
   margin: auto;
+  height: 90px;
 }
 .main-chart {
   margin: auto;
-  margin-top: 2%;
 }
 </style>
