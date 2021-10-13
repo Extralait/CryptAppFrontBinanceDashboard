@@ -3,8 +3,9 @@ import {
 } from '@/api/elements'
 import {
     ADD_OFFCHART_INDICATOR,
-    SET_KLINES
+    SET_KLINES, SET_TIME_OFFSET
 } from '../mutation-types'
+import moment from "moment";
 
 
 // Геттеры
@@ -24,22 +25,29 @@ export default {
             offchart:[]
         },
         chart_names:{},
+        time_offset:0
     },
     getters: {
         getChartData(state) {
             return state.chart_data
+        },
+        getTimeOffset(state){
+            return state.time_offset
         }
 
     },
 // Мутации
     mutations: {
+        [SET_TIME_OFFSET](state, time_offset){
+           state.time_offset = time_offset
+        },
         [SET_KLINES](state, klines) {
             state.chart_data.chart.name = klines[0].coin_pair_name
             let data = []
             for (let kline of klines.reverse()){
                 data.push(
                     [
-                        new Date(kline.take_time).getTime(),
+                        new Date(kline.take_time).getTime()+state.time_offset*1000*60,
                         kline.open_price,
                         kline.high,
                         kline.low,
@@ -60,7 +68,7 @@ export default {
             for (let indicator of indicators.reverse()){
                 let row_data = []
                 for (let time of indicator.take_time){
-                    row_data.push(new Date(time).getTime())
+                    row_data.push(new Date(time).getTime()+state.time_offset*1000*60)
                 }
                 for (let values of indicator.values_data){
                     row_data.push(values)
@@ -96,5 +104,10 @@ export default {
                     console.log(error)
                 })
         },
+        setTimeOffset({commit}){
+            const now_time = moment();
+            const local_offset = now_time.utcOffset();
+            commit(SET_TIME_OFFSET,local_offset)
+        }
     },
 }

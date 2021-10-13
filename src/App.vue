@@ -10,7 +10,7 @@
             :value="kline_type"
             :key="kline_type"
         >
-            {{kline_type}}
+          {{ kline_type }}
         </option>
       </select>
       <select
@@ -22,7 +22,7 @@
             :value="coin_pair_name"
             :key="coin_pair_name"
         >
-            {{coin_pair_name}}
+          {{ coin_pair_name }}
         </option>
       </select>
       <select
@@ -34,9 +34,17 @@
             :value="limit"
             :key="limit"
         >
-            {{limit}}
+          {{ limit }}
         </option>
       </select>
+      <input
+          type="datetime-local"
+          v-model="first_date"
+      >
+      <input
+          type="datetime-local"
+          v-model="last_date"
+      >
     </div>
     <div class="chart-container">
       <Chart
@@ -64,16 +72,29 @@ export default {
   data() {
     return {
       loading: true,
-      clientHeight:0,
-      clientWidth:0,
+      clientHeight: 0,
+      clientWidth: 0,
       kline_type: "1m",
       coin_pair_name: "BTCUSDT",
       limit: 200,
       update_counter: 0,
-      limits:[
+      first_date: null,
+      last_date: null,
+      limits: [
         50,
         100,
-        200
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900,
+        1000,
+        1500,
+        2000,
+
       ],
       klines_types: [
         '1m', '3m', '5m', '15m', '30m',
@@ -96,7 +117,7 @@ export default {
     }
   },
   methods: {
-    ...mapActions(['setKlines', 'addOffchartIndicator']),
+    ...mapActions(['setKlines', 'addOffchartIndicator', 'setTimeOffset']),
     buildChart: async function () {
       await this.setKlines(
           {
@@ -105,7 +126,7 @@ export default {
             "columns": [],
             "functions": [],
             "conditions": [
-              `coin_pair_name = '${this.coin_pair_name}'`,
+              `coin_pair_name = '${this.coin_pair_name}'${this.first_date ?" AND take_time > '" + String(this.using_first_date).replace("T", " ") + "'" : ''} ${this.last_date ?"AND take_time < '" + String(this.using_last_date).replace("T", " ") + "'" : ''}`,
               `kline_type = '${this.kline_type}'`,
             ],
             "group_by": [],
@@ -124,9 +145,9 @@ export default {
             "columns": [],
             "functions": [],
             "conditions": [
-              `coin_pair_name = '${this.coin_pair_name}'`,
+              `coin_pair_name = '${this.coin_pair_name}'${this.first_date ?" AND take_time[1] > '" + String(this.using_first_date).replace("T", " ") + "'" : ''} ${this.last_date ?"AND take_time[1] < '" + String(this.using_last_date).replace("T", " ") + "'" : ''}`,
               `indicator_kline_type = '${this.kline_type}'`,
-              "indicator_name = 'test_1'"
+              "indicator_name = 'test_1'",
             ],
             "order_by": ["take_time[1] DESC"],
             "group_by": [],
@@ -142,7 +163,7 @@ export default {
             "columns": [],
             "functions": [],
             "conditions": [
-              `coin_pair_name = '${this.coin_pair_name}'`,
+              `coin_pair_name = '${this.coin_pair_name}'${this.first_date ?" AND take_time[1] > '" + String(this.using_first_date).replace("T", " ") + "'" : ''} ${this.last_date ?"AND take_time[1] < '" + String(this.using_last_date).replace("T", " ") + "'" : ''}`,
               `indicator_kline_type = '${this.kline_type}'`,
               "indicator_name = 'test_2'"
             ],
@@ -161,7 +182,7 @@ export default {
             "columns": [],
             "functions": [],
             "conditions": [
-              `coin_pair_name = '${this.coin_pair_name}'`,
+              `coin_pair_name = '${this.coin_pair_name}'${this.first_date ?" AND take_time[1] > '" + String(this.using_first_date).replace("T", " ") + "'" : ''} ${this.last_date ?"AND take_time[1] < '" + String(this.using_last_date).replace("T", " ") + "'" : ''}`,
               `indicator_kline_type = '${this.kline_type}'`,
               "indicator_name = 'test_3'"
             ],
@@ -180,7 +201,7 @@ export default {
             "columns": [],
             "functions": [],
             "conditions": [
-              `coin_pair_name = '${this.coin_pair_name}'`,
+              `coin_pair_name = '${this.coin_pair_name}'${this.first_date ?" AND take_time[1] > '" + String(this.using_first_date).replace("T", " ") + "'" : ''} ${this.last_date ?"AND take_time[1] < '" + String(this.using_last_date).replace("T", " ") + "'" : ''}`,
               `indicator_kline_type = '${this.kline_type}'`,
               "indicator_name = 'test_4'"
             ],
@@ -195,37 +216,67 @@ export default {
       this.update_counter += 1
     },
     startWaiting: function () {
-        this.is_waiting_started=true
-        setInterval(() => {
-          this.buildChart()
-        }, 1000 * 60)
+      this.is_waiting_started = true
+      setInterval(() => {
+        this.buildChart()
+      }, 1000 * 60)
     },
     onResize: function () {
       this.clientHeight = document.documentElement.clientHeight
       this.clientWidth = document.documentElement.clientWidth
     },
+    dateFormatter: function (date_str){
+      let date = new Date(date_str)
+      date.setHours(date.getHours()+3)
+      return String(date.toISOString()).slice(0,-1)
+    }
   },
   computed: {
-    ...mapGetters(['getChartData']),
+    ...mapGetters(['getChartData','getTimeOffset']),
+    using_first_date: function (){
+      if (this.first_date){
+        return this.dateFormatter(this.first_date)
+      } else {
+        return null
+      }
+    },
+    using_last_date: function (){
+      if (this.last_date){
+        return this.dateFormatter(this.last_date)
+      } else {
+        return null
+      }
+    },
   },
   async mounted() {
+
     window.addEventListener('resize', this.onResize)
+    this.setTimeOffset()
+    this.time_offset=this.getTimeOffset
     await this.buildChart()
     this.loading = false
     this.startWaiting()
     this.onResize()
   },
-  watch:{
+  watch: {
     // eslint-disable-next-line no-unused-vars
-    limit(new_val,old_val) {
+    limit(new_val, old_val) {
       this.buildChart()
     },
     // eslint-disable-next-line no-unused-vars
-    coin_pair_name(new_val,old_val) {
+    coin_pair_name(new_val, old_val) {
       this.buildChart()
     },
     // eslint-disable-next-line no-unused-vars
-    kline_type(new_val,old_val) {
+    kline_type(new_val, old_val) {
+      this.buildChart()
+    },
+    // eslint-disable-next-line no-unused-vars
+    last_date(new_val, old_val) {
+      this.buildChart()
+    },
+    // eslint-disable-next-line no-unused-vars
+    first_date(new_val, old_val) {
       this.buildChart()
     },
   },
@@ -252,10 +303,11 @@ export default {
   margin: 0;
 }
 
-.control-container{
+.control-container {
   margin: auto;
   height: 90px;
 }
+
 .main-chart {
   margin: auto;
 }
