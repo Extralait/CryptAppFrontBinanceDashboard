@@ -212,14 +212,8 @@ export default {
             "sql": ""
           }
       )
+      this.update_counter+=1
 
-      this.update_counter += 1
-    },
-    startWaiting: function () {
-      this.is_waiting_started = true
-      setInterval(() => {
-        this.buildChart()
-      }, 1000 * 60)
     },
     onResize: function () {
       this.clientHeight = document.documentElement.clientHeight
@@ -255,7 +249,6 @@ export default {
     this.time_offset=this.getTimeOffset
     await this.buildChart()
     this.loading = false
-    this.startWaiting()
     this.onResize()
   },
   watch: {
